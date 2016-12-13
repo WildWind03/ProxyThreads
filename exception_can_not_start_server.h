@@ -9,9 +9,7 @@
 
 class exception_can_not_start_server : public exception_base {
 public:
-    exception_can_not_start_server(const std::string &exception_text) : exception_base(exception_text) {
-
-    }
+    exception_can_not_start_server(const std::string &exception_text) : exception_base(exception_text) {}
 
 };
 #endif //PROXYTHREADS_EXCEPTION_CAN_NOT_START_SERVER_H
