@@ -11,8 +11,9 @@
 #include "util.h"
 #include "http_request_parser.h"
 #include "exception_invalid_http_data.h"
+#include "my_observable.h"
 
-class request_client : public request_base {
+class request_client : public request_base, public observable {
     const int MAX_SIZE_OF_REQUEST = 2 * 1024;
     size_t read_bytes_of_request = 0;
 

@@ -8,7 +8,6 @@
 class observer {
 
 public:
-
-    virtual void update(int event_type1) = 0;
+    virtual void update(int event_type1, void* data) = 0;
 };
 #endif //PROXY_OBSERVER_H

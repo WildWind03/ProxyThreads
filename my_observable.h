@@ -7,34 +7,37 @@
 
 #include <map>
 #include "my_observer.h"
+#include "concurrent_hash_map.h"
 
 class observable {
 
 protected:
-    std::map<int, observer*> observers;
+    concurrent_hash_map<int, observer*> observers;
 
 public:
-    void notify(int event) {
+    void notify(int event, void *data) {
+        observers.lock_read();
+
         for (auto & iter : observers) {
-            iter.second -> update(event);
+            iter.second -> update(event, data);
         }
+
+        observers.unlock_read();
     }
 
-    void notify(int fd, int event_type1) {
-        observers.find(fd).operator*().second->update(event_type1);
+    void notify(int fd, int event_type1, void *data) {
+        observers.lock_read();
+        observers.find(fd).operator*().second->update(event_type1, data);
+        observers.unlock_read();
     }
 
     virtual void add_new_observer(observer *observer1, int key) {
-        observers.insert(std::pair<int, observer*> (key, observer1));
+        observers.insert(key, observer1);
     }
 
     virtual void delete_observer(int key) {
         observers.erase(key);
     }
-
-    std::map<int, observer*> get_observers() {
-        return observers;
-    };
 };
 
 #endif //PROXY_OBSERVABLE_H

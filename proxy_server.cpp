@@ -10,11 +10,8 @@
 #include <unistd.h>
 
 #include "proxy_server.h"
-#include "exception_base.h"
 #include "exception_can_not_start_server.h"
 #include "request_client.h"
-#include "exception_can_not_create_request.h"
-#include "exception_can_not_accept.h"
 
 proxy_server::proxy_server(int port) {
     if (port <= 0) {
@@ -64,7 +61,7 @@ void proxy_server::start() {
         try {
             std::cout << "New CLient" << std::endl;
             request_client *request_client1 = new request_client(new_fd, sockaddr_in1);
-            //requests.insert(std::pair<int, request_base*> (new_fd, request_client1));
+            requests.insert(new_fd, request_client1);
         } catch (const exception_can_not_create_request & can_not_create_request) {
             std::cout << can_not_create_request.get_text() << std::endl;
             close(new_fd);
@@ -75,6 +72,10 @@ void proxy_server::start() {
 
 void proxy_server::stop() {
     is_running = false;
+}
+
+void proxy_server::update(int event_type1, void *data) {
+
 }
 
 proxy_server::~proxy_server() {

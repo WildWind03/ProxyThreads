@@ -7,20 +7,24 @@
 
 #include <map>
 #include "request_base.h"
+#include "my_observer.h"
+#include "concurrent_hash_map.h"
 
-class proxy_server {
+class proxy_server : public observer {
     const char *BIND_IP = "127.0.0.1";
     const int MAX_COUNT_OF_PENDING_REQUESTS = 100;
 
     int socket_fd;
     bool is_running = true;
-    //std::map <int, request_base*> requests;
+    concurrent_hash_map <int, request_base*> requests;
 
 public:
     proxy_server(int port);
     void start();
     void stop();
     virtual ~proxy_server();
+
+    virtual void update(int event_type1, void *data) override;
 };
 
 
