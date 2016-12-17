@@ -57,12 +57,14 @@ void proxy_server::start() {
 
         int new_fd = accept(socket_fd, (struct sockaddr *) &sockaddr_in1, &socklen);
         if (-1 == new_fd) {
-            throw exception_can_not_accept ("Error while accepting");
+            std::cerr << "Error while accepting" << std::endl;
+            continue;
         }
 
         try {
-            request_client *request_client1 = new request_client(socket_fd, sockaddr_in1);
-            requests.insert(std::pair<int, request_base*> (socket_fd, request_client1));
+            std::cout << "New CLient" << std::endl;
+            request_client *request_client1 = new request_client(new_fd, sockaddr_in1);
+            //requests.insert(std::pair<int, request_base*> (new_fd, request_client1));
         } catch (const exception_can_not_create_request & can_not_create_request) {
             std::cout << can_not_create_request.get_text() << std::endl;
             close(new_fd);

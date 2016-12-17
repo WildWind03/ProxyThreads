@@ -5,9 +5,9 @@
 #ifndef PROXYTHREADS_REQUEST_BASE_H
 #define PROXYTHREADS_REQUEST_BASE_H
 
-#include <bits/socket.h>
 #include <pthread.h>
 #include <netinet/in.h>
+#include "exception_can_not_create_request.h"
 
 class request_base {
     int socket_fd;
@@ -23,7 +23,7 @@ public:
 
         int result_of_thread_creating = pthread_create(&thread, NULL, run, this);
         if (-1 == result_of_thread_creating) {
-            throw new
+            throw exception_can_not_create_request("Can not create new thread");
         }
 
     }
@@ -34,7 +34,7 @@ public:
         return nullptr;
     }
 
-    virtual void exec() = 0;
+    virtual void* exec() = 0;
 
     virtual int get_socket_fd() final {
         return socket_fd;

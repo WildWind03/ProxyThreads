@@ -16,7 +16,7 @@ public:
         this -> text = exception_text;
     }
 
-    std::string get_text() const final {
+    std::string get_text() const {
         return text;
     }
 
