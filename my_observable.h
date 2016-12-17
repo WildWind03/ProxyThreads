@@ -6,7 +6,7 @@
 #define PROXY_OBSERVABLE_H
 
 #include <map>
-#include "observer.h"
+#include "my_observer.h"
 
 class observable {
 
@@ -14,13 +14,13 @@ protected:
     std::map<int, observer*> observers;
 
 public:
-    void notify(event_type event_type1) {
+    void notify(int event) {
         for (auto & iter : observers) {
-            iter.second -> update(event_type1);
+            iter.second -> update(event);
         }
     }
 
-    void notify(int fd, event_type event_type1) {
+    void notify(int fd, int event_type1) {
         observers.find(fd).operator*().second->update(event_type1);
     }
 

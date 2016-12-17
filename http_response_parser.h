@@ -1,9 +1,9 @@
 //
-// Created by alexander on 08.12.16.
+// Created by alexander on 17.12.16.
 //
 
-#ifndef PROXY_HTTP_RESPONSE_PARSER_H
-#define PROXY_HTTP_RESPONSE_PARSER_H
+#ifndef PROXYTHREADS_HTTP_RESPONSE_PARSER_H
+#define PROXYTHREADS_HTTP_RESPONSE_PARSER_H
 
 #include <sstream>
 #include <iostream>
@@ -29,4 +29,5 @@ public:
     }
 
 };
-#endif //PROXY_HTTP_RESPONSE_PARSER_H
+
+#endif //PROXYTHREADS_HTTP_RESPONSE_PARSER_H
