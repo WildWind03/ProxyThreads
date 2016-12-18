@@ -11,15 +11,13 @@
 
 class request_base {
     int socket_fd;
-    sockaddr_in addr;
     pthread_t thread;
 
 public:
     bool is_running = true;
 
-    request_base(int socket_fd, sockaddr_in addr) {
+    request_base(int socket_fd) {
         this -> socket_fd = socket_fd;
-        this -> addr = addr;
     }
 
     static void* run(void* arg) {
@@ -35,7 +33,7 @@ public:
         }
     }
 
-    virtual void* exec() = 0;
+    virtual void exec() = 0;
 
     virtual int get_socket_fd() final {
         return socket_fd;

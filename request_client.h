@@ -28,11 +28,11 @@ class request_client : public request_base, public observer {
     observer *observer1 = nullptr;
 
 public:
-    request_client(int socket_fd, sockaddr_in addr) : request_base(socket_fd, addr) {
+    request_client(int socket_fd, sockaddr_in addr) : request_base(socket_fd) {
         request = new char[MAX_SIZE_OF_REQUEST];
     }
 
-    virtual void* exec() override {
+    virtual void exec() override {
         while (is_running) {
             if (is_read) {
                 ssize_t count_of_received_bytes = recv(get_socket_fd(), request, MAX_SIZE_OF_REQUEST - read_bytes_of_request, 0);
@@ -81,13 +81,13 @@ public:
                             default:
                                 std::cerr << "There is not get request. The connection will be closed" << std::endl;
                                 observer1->update(events::DELETE_REQUEST, (void*) get_socket_fd());
-                                return nullptr;
+                                return;
                         }
 
                     } catch (exception_invalid_http_data & e) {
                         std::cerr << e.get_text() << std::endl;
                         observer1->update(events::DELETE_REQUEST, (void*) get_socket_fd());
-                        return nullptr;
+                        return;
                     }
                 }
 
@@ -97,7 +97,7 @@ public:
                 break;
             }
         }
-        return nullptr;
+        return;
     }
 
     const char* get_request() {
