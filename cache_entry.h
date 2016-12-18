@@ -43,7 +43,7 @@ public:
         this -> url = url;
     }
 
-    int read(int socket_fd, char* src) {
+    int read_to_browser(int socket_fd, char *src) {
         size_t pos = 0;
         int result;
 
@@ -109,29 +109,30 @@ public:
         return result;
     }
 
-    int write(int socket_fd) {
+    int read_from_server(int socket_fd) {
         int result = COMMON_ERROR;
 
         pthread_mutex_lock(&mutex);
 
         while(!is_finished) {
-
-            while (0 == MAX_DATA_SIZE - current_length) {
+            while (0 == MAX_DATA_SIZE - current_length &&
+                   count_of_readers_which_have_read_all_buffer < count_of_readers) {
                 pthread_cond_wait(&cond_writer, &mutex);
-
-                if (0 == count_of_readers && is_streaming) {
-                    result = DELETE_CACHE_ENTRY;
-                    pthread_mutex_unlock(&mutex);
-                    return result;
-                }
-
-                if (count_of_readers_which_have_read_all_buffer >= count_of_readers) {
-                    is_streaming = true;
-                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
-                    count_of_readers_which_have_read_all_buffer = 0;
-                    current_length = 0;
-                }
             }
+
+            if (0 == MAX_DATA_SIZE - current_length && count_of_readers_which_have_read_all_buffer >= count_of_readers) {
+                is_streaming = true;
+                observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+                count_of_readers_which_have_read_all_buffer = 0;
+                current_length = 0;
+            }
+
+            if (0 == count_of_readers && is_streaming) {
+                result = DELETE_CACHE_ENTRY;
+                pthread_mutex_unlock(&mutex);
+                return result;
+            }
+
             ssize_t count_of_received_bytes = recv(socket_fd, data + current_length,
                                                    MAX_DATA_SIZE - current_length, 0);
 

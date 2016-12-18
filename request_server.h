@@ -64,7 +64,7 @@ public:
                 }
 
             } else {
-                int result = cache_entry1 -> write(get_socket_fd());
+                int result = cache_entry1->read_from_server(get_socket_fd());
 
                 if (cache_entry::DELETE_CACHE_ENTRY == result) {
                     delete cache_entry1;

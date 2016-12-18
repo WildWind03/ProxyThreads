@@ -41,7 +41,7 @@ public:
         if (iter == map.end()) {
             value = nullptr;
         } else {
-            value = iter.second;
+            value = iter.operator*().second;
         }
 
         pthread_rwlock_unlock(&rwlock);

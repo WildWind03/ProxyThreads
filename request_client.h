@@ -11,7 +11,6 @@
 #include "util.h"
 #include "http_request_parser.h"
 #include "exception_invalid_http_data.h"
-#include "my_observable.h"
 #include "events.h"
 
 class request_client : public request_base{
@@ -89,7 +88,7 @@ public:
                 }
 
             } else {
-                int result = cache_entry1->read(get_socket_fd(), request);
+                int result = cache_entry1->read_to_browser(get_socket_fd(), request);
 
                 if (cache_entry::DELETE_CACHE_ENTRY == result) {
                     delete cache_entry1;
