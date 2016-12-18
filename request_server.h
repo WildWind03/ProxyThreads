@@ -20,12 +20,14 @@ class request_server : public request_base, public observer {
     observer *observer1;
     bool is_write = true;
     size_t pos_in_sending_data = 0;
+    std::string url;
 
 public:
     request_server(int socket_fd, addrinfo *addrinfo1, std::string request, cache_entry *cache_entry1, std::string url) : request_base(socket_fd) {
         this->request = request;
         this -> cache_entry1 = cache_entry1;
         this -> logger1 = new logger("server", "/home/alexander/ClionProjects/Proxy/log/" + sockets_util::get_logger_filename_by_url(url));
+        this -> url = url;
     }
 
     void set_observer(observer *observer2) {
@@ -37,7 +39,9 @@ public:
 
         if (-1 == connect_result) {
             log("Can not connect");
-            observer1 -> update(events::SEND_TO_SERVER_ERROR, (void*) get_socket_fd());
+            observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
+            observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+            cache_entry1 -> mark_invalid();
             return;
         }
 
@@ -48,7 +52,9 @@ public:
 
                 if (-1 == count_of_send_data) {
                     log ("Error while sending data to server");
-                    observer1 -> update(events::SEND_TO_SERVER_ERROR, (void*) get_socket_fd());
+                    observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
+                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+                    cache_entry1 -> mark_invalid();
                     return;
                 }
 
@@ -63,7 +69,9 @@ public:
                 int result = cache_entry1 -> write(get_socket_fd());
 
                 if (-1 == result) {
-                    observer1 -> update(events::SEND_FROM_SERVER_ERROR, (void*) get_socket_fd());
+                    observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
+                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+                    cache_entry1 -> mark_invalid();
                 }
 
                 return;

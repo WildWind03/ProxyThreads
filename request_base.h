@@ -23,6 +23,7 @@ public:
     static void* run(void* arg) {
         request_base *request_base1 = (request_base*) arg;
         request_base1->exec();
+        delete request_base1;
         return nullptr;
     }
 

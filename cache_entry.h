@@ -20,12 +20,15 @@ class cache_entry {
     pthread_cond_t cond_writer;
 
     atomic_counter atomic_counter1 = 0;
+    atomic_counter count_of_exit_readers = 0;
 
     concurrent_hash_map<int, observer*> readers;
 
     observer *observer1;
 
     bool is_finished = false;
+    bool is_invalid = false;
+    bool is_streaming = false;
 
     const size_t MAX_DATA_SIZE = 5 * 1024 * 1024;
 
@@ -57,7 +60,10 @@ public:
                 readers.lock_read();
 
                 if (atomic_counter1.get() == readers.size()) {
-                    observer1 -> update(events::STREAM_ENTRY, (void*) url.c_str()); //todo write update
+                    if (!is_streaming) {
+                        is_streaming = true;
+                        observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+                    }
                     pthread_cond_signal(&cond_writer);
                 }
 
@@ -66,6 +72,17 @@ public:
 
             while (pos == current_length) {
                 pthread_cond_wait(&cond_reader, &mutex);
+
+                if (is_invalid) {
+                    pthread_mutex_unlock(&mutex);
+                    count_of_exit_readers.increment();
+
+                    if (count_of_exit_readers.get() >= readers.size()) {
+                        return -2;
+                    }
+
+                    return -1;
+                }
             }
 
             ssize_t count_of_sent_chars = send(socket_fd, data + pos, current_length - pos, MSG_NOSIGNAL);
@@ -132,6 +149,17 @@ public:
     void delete_reader(int fd) {
         readers.erase(fd);
     }
+
+    void mark_invalid() {
+        this -> is_invalid = true;
+
+        pthread_mutex_lock(&mutex);
+
+        pthread_cond_broadcast(&cond_reader);
+
+        pthread_mutex_unlock(&mutex);
+    }
+
 
     virtual ~cache_entry() {
         pthread_mutex_destroy(&mutex);

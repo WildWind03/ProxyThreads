@@ -81,13 +81,6 @@ void proxy_server::stop() {
 
 void proxy_server::update(int event_type1, void *data) {
     switch(event_type1) {
-        case events::INVALID_REQUEST:
-            int fd = (int) data;
-
-            request_base *request_base2 = requests.erase(fd);
-            delete request_base2;
-
-            break;
         case events::REQUEST_GOT:
             request_client* request_client1 = (request_client*) data;
             cache.lock_write();
@@ -111,10 +104,11 @@ void proxy_server::update(int event_type1, void *data) {
             cache.unlock();
 
             break;
-        case events::SEND_TO_SERVER_ERROR:
-
+        case events::DELETE_REQUEST:
+            requests.erase((int) data);
             break;
-        case events::SEND_FROM_SERVER_ERROR:
+        case events::DELETE_ENTRY_FROM_CACHE:
+            cache.erase((char*) data);
             break;
         case events::STREAM_ENTRY:
             break;
