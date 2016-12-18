@@ -1,7 +1,7 @@
 //
 // Created by alexander on 17.12.16.
 //
-
+#pragma once
 #ifndef PROXYTHREADS_EXCEPTION_INVALID_HTTP_H
 #define PROXYTHREADS_EXCEPTION_INVALID_HTTP_H
 

@@ -1,7 +1,7 @@
 //
 // Created by alexander on 17.12.16.
 //
-
+#pragma once
 #ifndef PROXYTHREADS_CONCURRENT_HASH_MAP_H
 #define PROXYTHREADS_CONCURRENT_HASH_MAP_H
 
@@ -14,7 +14,6 @@ class concurrent_hash_map {
 
 public:
     concurrent_hash_map() {
-
     }
 
     void insert(K key, V value) {
@@ -37,9 +36,14 @@ public:
         pthread_rwlock_rdlock(&rwlock);
     }
 
-    void unlock_read() {
+    void unlock() {
         pthread_rwlock_unlock(&rwlock);
     }
+
+    void lock_write() {
+        pthread_rwlock_wrlock(&rwlock);
+    }
+
 
     typename std::map<K,V>::const_iterator begin() const {
         return map.begin();

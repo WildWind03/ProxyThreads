@@ -1,6 +1,7 @@
 //
 // Created by alexander on 09.12.16.
 //
+#pragma once
 
 #ifndef PROXY_OBSERVER_H
 #define PROXY_OBSERVER_H

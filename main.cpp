@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include "proxy_server.h"
 

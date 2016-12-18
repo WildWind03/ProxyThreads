@@ -1,7 +1,7 @@
 //
 // Created by alexander on 13.12.16.
 //
-
+#pragma once
 #ifndef PROXYTHREADS_LOGGER_H
 #define PROXYTHREADS_LOGGER_H
 

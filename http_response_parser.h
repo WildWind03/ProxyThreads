@@ -1,7 +1,7 @@
 //
 // Created by alexander on 17.12.16.
 //
-
+#pragma once
 #ifndef PROXYTHREADS_HTTP_RESPONSE_PARSER_H
 #define PROXYTHREADS_HTTP_RESPONSE_PARSER_H
 

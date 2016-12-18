@@ -1,7 +1,7 @@
 //
 // Created by alexander on 13.12.16.
 //
-
+#pragma once
 #ifndef PROXYTHREADS_EXCEPTION_CAN_NOT_CREATE_REQUEST_H
 #define PROXYTHREADS_EXCEPTION_CAN_NOT_CREATE_REQUEST_H
 

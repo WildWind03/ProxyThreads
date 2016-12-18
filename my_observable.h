@@ -1,6 +1,7 @@
 //
 // Created by alexander on 09.12.16.
 //
+#pragma once
 
 #ifndef PROXY_OBSERVABLE_H
 #define PROXY_OBSERVABLE_H
@@ -16,19 +17,19 @@ protected:
 
 public:
     void notify(int event, void *data) {
-        observers.lock_read();
+        observers.lock_write();
 
         for (auto & iter : observers) {
             iter.second -> update(event, data);
         }
 
-        observers.unlock_read();
+        observers.unlock();
     }
 
     void notify(int fd, int event_type1, void *data) {
-        observers.lock_read();
+        observers.lock_write();
         observers.find(fd).operator*().second->update(event_type1, data);
-        observers.unlock_read();
+        observers.unlock();
     }
 
     virtual void add_new_observer(observer *observer1, int key) {

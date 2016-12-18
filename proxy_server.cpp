@@ -1,6 +1,7 @@
 //
 // Created by alexander on 13.12.16.
 //
+#pragma once
 
 #include <stdexcept>
 #include <sys/socket.h>
@@ -8,12 +9,14 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include <unistd.h>
+#include <csignal>
 
 #include "proxy_server.h"
 #include "exception_can_not_start_server.h"
 #include "request_client.h"
 
 proxy_server::proxy_server(int port) {
+
     if (port <= 0) {
         throw exception_can_not_start_server ("Typed port (" + std::to_string(port) + ") is less than zero. The port must be positive");
     }
@@ -61,7 +64,9 @@ void proxy_server::start() {
         try {
             std::cout << "New CLient" << std::endl;
             request_client *request_client1 = new request_client(new_fd, sockaddr_in1);
+            request_client1->set_observer(this);
             requests.insert(new_fd, request_client1);
+            request_client1->start();
         } catch (const exception_can_not_create_request & can_not_create_request) {
             std::cout << can_not_create_request.get_text() << std::endl;
             close(new_fd);
@@ -75,7 +80,36 @@ void proxy_server::stop() {
 }
 
 void proxy_server::update(int event_type1, void *data) {
+    if (events::DELETE_REQUEST == event_type1) {
+        int fd = (int) data;
+        requests.lock_write();
+        request_base *request_base1 = requests.find(fd).operator*().second;
+        delete request_base1;
+        requests.unlock();
 
+        requests.erase(fd);
+    }
+
+    if (events::REQUEST_GOT == event_type1) {
+        request_client* request_client1 = (request_client*) data;
+        cache.lock_write();
+        cache_entry *cache_entry1;
+
+        auto iter = cache.find(request_client1->get_url());
+        if (cache.end() == iter) {
+            request_client1->log("There is no appropriate data in cache");
+            cache_entry1 = new cache_entry();
+            cache.insert(request_client1->get_url(), cache_entry1);
+        } else {
+            request_client1->log("There is appropriate data in cache");
+            cache_entry1 = iter.operator*().second;
+        }
+
+        request_client1 -> set_buffer(cache_entry1);
+        cache_entry1 -> add_reader(request_client1->get_socket_fd(), request_client1);
+
+        cache.unlock();
+    }
 }
 
 proxy_server::~proxy_server() {
