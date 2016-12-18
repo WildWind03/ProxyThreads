@@ -19,10 +19,9 @@ class cache_entry {
     pthread_cond_t cond_reader;
     pthread_cond_t cond_writer;
 
-    atomic_counter atomic_counter1 = 0;
-    atomic_counter count_of_exit_readers = 0;
-
-    concurrent_hash_map<int, observer*> readers;
+    int count_of_readers_which_have_read_all_buffer = 0;
+    int count_of_readers = 0;
+    int count_of_exit_readers = 0;
 
     observer *observer1;
 
@@ -33,6 +32,10 @@ class cache_entry {
     const size_t MAX_DATA_SIZE = 5 * 1024 * 1024;
 
 public:
+
+    const static int COMMON_ERROR = -1;
+    const static int DELETE_CACHE_ENTRY = -2;
+
     cache_entry(std::string url) {
         data = new char[MAX_DATA_SIZE];
         mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -55,40 +58,37 @@ public:
             }
 
             if (pos == MAX_DATA_SIZE && !is_finished) {
-                atomic_counter1.increment();
+                count_of_readers_which_have_read_all_buffer++;
 
-                readers.lock_read();
-
-                if (atomic_counter1.get() == readers.size()) {
+                if (count_of_readers_which_have_read_all_buffer == count_of_readers) {
                     if (!is_streaming) {
                         is_streaming = true;
                         observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
                     }
+
                     pthread_cond_signal(&cond_writer);
                 }
-
-                readers.unlock();
             }
 
             while (pos == current_length) {
-                pthread_cond_wait(&cond_reader, &mutex);
-
                 if (is_invalid) {
                     pthread_mutex_unlock(&mutex);
-                    count_of_exit_readers.increment();
+                    count_of_exit_readers++;
 
-                    if (count_of_exit_readers.get() >= readers.size()) {
-                        return -2;
+                    if (count_of_exit_readers >= count_of_readers) {
+                        return DELETE_CACHE_ENTRY;
                     }
 
-                    return -1;
+                    return COMMON_ERROR;
                 }
+
+                pthread_cond_wait(&cond_reader, &mutex);
             }
 
             ssize_t count_of_sent_chars = send(socket_fd, data + pos, current_length - pos, MSG_NOSIGNAL);
 
             if (-1 == count_of_sent_chars) {
-                result = -1;
+                result = COMMON_ERROR;
                 break;
             }
 
@@ -101,16 +101,22 @@ public:
     }
 
     int write(int socket_fd) {
-        int result = -1;
+        int result = COMMON_ERROR;
 
         pthread_mutex_lock(&mutex);
 
         while(!is_finished) {
             while (0 == MAX_DATA_SIZE - current_length) {
+                if (0 == count_of_readers && is_streaming) {
+                    result = DELETE_CACHE_ENTRY;
+                    pthread_mutex_unlock(&mutex);
+                    return result;
+                }
+
                 pthread_cond_wait(&cond_writer, &mutex);
 
-                if (atomic_counter1.get() >= readers.size()) {
-                    atomic_counter1.set_value(0);
+                if (count_of_readers_which_have_read_all_buffer >= count_of_readers) {
+                    count_of_readers_which_have_read_all_buffer = 0;
                     current_length = 0;
                 }
             }
@@ -121,8 +127,8 @@ public:
             current_length += count_of_received_bytes;
 
             if (-1 == count_of_received_bytes) {
-                result = -1;
-                break;
+                result = COMMON_ERROR;
+                is_invalid = true;
             }
 
             if (0 == count_of_received_bytes) {
@@ -138,23 +144,28 @@ public:
         return result;
     }
 
-    void add_reader(int fd, observer *observer1) {
-        readers.insert(fd, observer1);
+    void add_reader() {
+        pthread_mutex_lock(&mutex);
+        count_of_readers++;
+        pthread_mutex_unlock(&mutex);
     }
 
     void add_observer(observer *observer2) {
+        pthread_mutex_lock(&mutex);
         this -> observer1 = observer2;
+        pthread_mutex_unlock(&mutex);
     }
 
-    void delete_reader(int fd) {
-        readers.erase(fd);
+    void delete_reader() {
+        pthread_mutex_lock(&mutex);
+        count_of_readers--;
+        pthread_mutex_unlock(&mutex);
     }
 
     void mark_invalid() {
-        this -> is_invalid = true;
-
         pthread_mutex_lock(&mutex);
 
+        this -> is_invalid = true;
         pthread_cond_broadcast(&cond_reader);
 
         pthread_mutex_unlock(&mutex);

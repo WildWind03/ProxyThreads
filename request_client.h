@@ -14,7 +14,7 @@
 #include "my_observable.h"
 #include "events.h"
 
-class request_client : public request_base, public observer {
+class request_client : public request_base{
     const int MAX_SIZE_OF_REQUEST = 2 * 1024;
     size_t read_bytes_of_request = 0;
 
@@ -94,19 +94,20 @@ public:
             } else {
                 int result = cache_entry1->read(get_socket_fd(), request);
 
-                if (-2 == result) {
+                if (cache_entry::DELETE_CACHE_ENTRY == result) {
                     delete cache_entry1;
                 }
 
-                if (result < 0) {
-                    observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
-                }
+                observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
+                cache_entry1->delete_reader();
 
                 break;
             }
         }
         return;
     }
+
+
 
     const char* get_request() {
         return request;

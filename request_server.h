@@ -68,12 +68,16 @@ public:
             } else {
                 int result = cache_entry1 -> write(get_socket_fd());
 
-                if (-1 == result) {
-                    observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
+                if (cache_entry::DELETE_CACHE_ENTRY == result) {
+                    delete cache_entry1;
+                }
+
+                if (cache_entry::COMMON_ERROR == result) {
                     observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
                     cache_entry1 -> mark_invalid();
                 }
 
+                observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
                 return;
             }
         }

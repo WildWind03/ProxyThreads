@@ -99,7 +99,7 @@ void proxy_server::update(int event_type1, void *data) {
             }
 
             request_client1 -> set_buffer(cache_entry1);
-            cache_entry1 -> add_reader(request_client1->get_socket_fd(), request_client1);
+            cache_entry1 -> add_reader();
 
             cache.unlock();
 
@@ -109,8 +109,6 @@ void proxy_server::update(int event_type1, void *data) {
             break;
         case events::DELETE_ENTRY_FROM_CACHE:
             cache.erase((char*) data);
-            break;
-        case events::STREAM_ENTRY:
             break;
         case events::SEND_TO_BROWSER_ERROR:
             break;
