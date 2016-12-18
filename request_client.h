@@ -94,7 +94,7 @@ public:
                 if (cache_entry::DELETE_CACHE_ENTRY == result) {
                     delete cache_entry1;
                 } else {
-                    cache_entry1->delete_reader();
+                    cache_entry1 -> delete_reader();
                 }
 
                 break;

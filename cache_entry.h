@@ -50,34 +50,34 @@ public:
         pthread_mutex_lock(&mutex);
 
         while(true) {
-            while (pos >= current_length) {
+            while (pos >= current_length && !is_invalid && !(is_finished && current_length == pos)) {
                 pthread_cond_wait(&cond_reader, &mutex);
+            }
 
-                if (is_finished && current_length == pos) {
-                    count_of_readers--;
+            if (is_finished && current_length == pos) {
+                count_of_readers--;
 
-                    result = 0;
-                    if (is_streaming && 0 == count_of_readers) {
-                        result = DELETE_CACHE_ENTRY;
-                    }
-                    pthread_mutex_unlock(&mutex);
+                result = 0;
+                if (is_streaming && 0 == count_of_readers) {
+                    result = DELETE_CACHE_ENTRY;
+                }
+                pthread_mutex_unlock(&mutex);
 
-                    return result;
+                return result;
 
+            }
+
+            if (is_invalid) {
+                result = COMMON_ERROR;
+                count_of_readers--;
+
+                if (0 == count_of_readers) {
+                    result = DELETE_CACHE_ENTRY;
                 }
 
-                if (is_invalid) {
-                    result = COMMON_ERROR;
-                    count_of_readers--;
+                pthread_mutex_unlock(&mutex);
 
-                    if (0 == count_of_readers) {
-                        result = DELETE_CACHE_ENTRY;
-                    }
-
-                    pthread_mutex_unlock(&mutex);
-
-                    return result;
-                }
+                return result;
             }
 
             ssize_t count_of_sent_chars = send(socket_fd, data + pos, current_length - pos, MSG_NOSIGNAL);
@@ -89,6 +89,7 @@ public:
                 if (is_streaming && 0 == count_of_readers) {
                     result = DELETE_CACHE_ENTRY;
                 }
+
                 break;
             }
 
@@ -98,11 +99,6 @@ public:
                 count_of_readers_which_have_read_all_buffer++;
 
                 if (count_of_readers_which_have_read_all_buffer == count_of_readers) {
-                    if (!is_streaming) {
-                        is_streaming = true;
-                        observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
-                    }
-
                     pthread_cond_signal(&cond_writer);
                 }
             }
@@ -130,6 +126,8 @@ public:
                 }
 
                 if (count_of_readers_which_have_read_all_buffer >= count_of_readers) {
+                    is_streaming = true;
+                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
                     count_of_readers_which_have_read_all_buffer = 0;
                     current_length = 0;
                 }
