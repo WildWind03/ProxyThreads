@@ -39,7 +39,6 @@ public:
 
                 if (-1 == count_of_received_bytes || 0 == count_of_received_bytes) {
                     std::cerr << "Invalid read operation. The connection will be closed" << std::endl;
-                    observer1->update(events::DELETE_REQUEST, (void*) get_socket_fd());
                     break;
                 }
 
@@ -80,13 +79,11 @@ public:
                             }
                             default:
                                 std::cerr << "There is not get request. The connection will be closed" << std::endl;
-                                observer1->update(events::DELETE_REQUEST, (void*) get_socket_fd());
                                 return;
                         }
 
                     } catch (exception_invalid_http_data & e) {
                         std::cerr << e.get_text() << std::endl;
-                        observer1->update(events::DELETE_REQUEST, (void*) get_socket_fd());
                         return;
                     }
                 }
@@ -96,10 +93,9 @@ public:
 
                 if (cache_entry::DELETE_CACHE_ENTRY == result) {
                     delete cache_entry1;
+                } else {
+                    cache_entry1->delete_reader();
                 }
-
-                observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
-                cache_entry1->delete_reader();
 
                 break;
             }

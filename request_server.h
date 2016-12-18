@@ -39,7 +39,6 @@ public:
 
         if (-1 == connect_result) {
             log("Can not connect");
-            observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
             observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
             cache_entry1 -> mark_invalid();
             return;
@@ -52,7 +51,6 @@ public:
 
                 if (-1 == count_of_send_data) {
                     log ("Error while sending data to server");
-                    observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
                     observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
                     cache_entry1 -> mark_invalid();
                     return;
@@ -77,7 +75,6 @@ public:
                     cache_entry1 -> mark_invalid();
                 }
 
-                observer1 -> update(events::DELETE_REQUEST, (void*) get_socket_fd());
                 return;
             }
         }

@@ -21,7 +21,6 @@ class cache_entry {
 
     int count_of_readers_which_have_read_all_buffer = 0;
     int count_of_readers = 0;
-    int count_of_exit_readers = 0;
 
     observer *observer1;
 
@@ -51,11 +50,49 @@ public:
         pthread_mutex_lock(&mutex);
 
         while(true) {
+            while (pos >= current_length) {
+                pthread_cond_wait(&cond_reader, &mutex);
 
-            if (pos == current_length && is_finished) {
-                result = 0;
+                if (is_finished && current_length == pos) {
+                    count_of_readers--;
+
+                    result = 0;
+                    if (is_streaming && 0 == count_of_readers) {
+                        result = DELETE_CACHE_ENTRY;
+                    }
+                    pthread_mutex_unlock(&mutex);
+
+                    return result;
+
+                }
+
+                if (is_invalid) {
+                    result = COMMON_ERROR;
+                    count_of_readers--;
+
+                    if (0 == count_of_readers) {
+                        result = DELETE_CACHE_ENTRY;
+                    }
+
+                    pthread_mutex_unlock(&mutex);
+
+                    return result;
+                }
+            }
+
+            ssize_t count_of_sent_chars = send(socket_fd, data + pos, current_length - pos, MSG_NOSIGNAL);
+
+            if (-1 == count_of_sent_chars) {
+                result = COMMON_ERROR;
+                count_of_readers--;
+
+                if (is_streaming && 0 == count_of_readers) {
+                    result = DELETE_CACHE_ENTRY;
+                }
                 break;
             }
+
+            pos += count_of_sent_chars;
 
             if (pos == MAX_DATA_SIZE && !is_finished) {
                 count_of_readers_which_have_read_all_buffer++;
@@ -69,30 +106,6 @@ public:
                     pthread_cond_signal(&cond_writer);
                 }
             }
-
-            while (pos == current_length) {
-                if (is_invalid) {
-                    pthread_mutex_unlock(&mutex);
-                    count_of_exit_readers++;
-
-                    if (count_of_exit_readers >= count_of_readers) {
-                        return DELETE_CACHE_ENTRY;
-                    }
-
-                    return COMMON_ERROR;
-                }
-
-                pthread_cond_wait(&cond_reader, &mutex);
-            }
-
-            ssize_t count_of_sent_chars = send(socket_fd, data + pos, current_length - pos, MSG_NOSIGNAL);
-
-            if (-1 == count_of_sent_chars) {
-                result = COMMON_ERROR;
-                break;
-            }
-
-            pos += count_of_sent_chars;
         }
 
         pthread_mutex_unlock(&mutex);
@@ -106,21 +119,21 @@ public:
         pthread_mutex_lock(&mutex);
 
         while(!is_finished) {
+
             while (0 == MAX_DATA_SIZE - current_length) {
+                pthread_cond_wait(&cond_writer, &mutex);
+
                 if (0 == count_of_readers && is_streaming) {
                     result = DELETE_CACHE_ENTRY;
                     pthread_mutex_unlock(&mutex);
                     return result;
                 }
 
-                pthread_cond_wait(&cond_writer, &mutex);
-
                 if (count_of_readers_which_have_read_all_buffer >= count_of_readers) {
                     count_of_readers_which_have_read_all_buffer = 0;
                     current_length = 0;
                 }
             }
-
             ssize_t count_of_received_bytes = recv(socket_fd, data + current_length,
                                                    MAX_DATA_SIZE - current_length, 0);
 

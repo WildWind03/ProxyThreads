@@ -8,8 +8,6 @@ class events {
 
 public:
     static const int REQUEST_GOT = 2;
-    static const int SEND_TO_BROWSER_ERROR = 4;
-    static const int DELETE_REQUEST = 5;
     static const int DELETE_ENTRY_FROM_CACHE = 7;
 
     events() = delete;

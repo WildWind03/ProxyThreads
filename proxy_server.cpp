@@ -62,10 +62,9 @@ void proxy_server::start() {
         }
 
         try {
-            std::cout << "New CLient" << std::endl;
+            std::cout << "New Client" << std::endl;
             request_client *request_client1 = new request_client(new_fd, sockaddr_in1);
             request_client1->set_observer(this);
-            //requests.insert(new_fd, request_client1);
             request_client1->start();
         } catch (const exception_can_not_create_request & can_not_create_request) {
             std::cout << can_not_create_request.get_text() << std::endl;
@@ -96,11 +95,7 @@ void proxy_server::update(int event_type1, void *data) {
 
             request_client1 -> set_buffer(cache_entry1);
             cache_entry1 -> add_reader();
-
             break;
-        //case events::DELETE_REQUEST:
-        //    requests.erase((int) data);
-        //    break;
         case events::DELETE_ENTRY_FROM_CACHE:
             cache.erase((char*) data);
             break;
