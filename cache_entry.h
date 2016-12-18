@@ -9,7 +9,6 @@
 #include "my_observer.h"
 #include "concurrent_hash_map.h"
 #include "events.h"
-#include "atomic_counter.h"
 
 class cache_entry {
     std::string url;

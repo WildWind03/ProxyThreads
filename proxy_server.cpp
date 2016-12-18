@@ -14,6 +14,7 @@
 #include "proxy_server.h"
 #include "exception_can_not_start_server.h"
 #include "request_client.h"
+#include "request_server.h"
 
 proxy_server::proxy_server(int port) {
 
@@ -89,6 +90,7 @@ void proxy_server::update(int event_type1, void *data) {
                 cache_entry1 = new cache_entry(request_client1->get_url());
                 cache_entry1->add_observer(this);
                 cache.insert(request_client1->get_url(), cache_entry1);
+                //todo create server request
             } else {
                 request_client1->log("There is appropriate data in cache");
             }
