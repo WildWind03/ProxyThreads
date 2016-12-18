@@ -80,38 +80,50 @@ void proxy_server::stop() {
 }
 
 void proxy_server::update(int event_type1, void *data) {
-    if (events::DELETE_REQUEST == event_type1) {
-        int fd = (int) data;
-        requests.lock_write();
-        request_base *request_base1 = requests.find(fd).operator*().second;
-        delete request_base1;
-        requests.unlock();
+    switch(event_type1) {
+        case events::INVALID_REQUEST:
+            int fd = (int) data;
 
-        requests.erase(fd);
+            request_base *request_base2 = requests.erase(fd);
+            delete request_base2;
+
+            break;
+        case events::REQUEST_GOT:
+            request_client* request_client1 = (request_client*) data;
+            cache.lock_write();
+            cache_entry *cache_entry1;
+
+            auto iter = cache.find(request_client1->get_url());
+            if (cache.end() == iter) {
+                request_client1->log("There is no appropriate data in cache");
+                cache_entry1 = new cache_entry(request_client1->get_url());
+                cache_entry1->add_observer(this);
+                cache.insert(request_client1->get_url(), cache_entry1);
+
+            } else {
+                request_client1->log("There is appropriate data in cache");
+                cache_entry1 = iter.operator*().second;
+            }
+
+            request_client1 -> set_buffer(cache_entry1);
+            cache_entry1 -> add_reader(request_client1->get_socket_fd(), request_client1);
+
+            cache.unlock();
+
+            break;
+        case events::SEND_TO_SERVER_ERROR:
+
+            break;
+        case events::SEND_FROM_SERVER_ERROR:
+            break;
+        case events::STREAM_ENTRY:
+            break;
+        case events::SEND_TO_BROWSER_ERROR:
+            break;
+        default:
+            break;
     }
 
-    if (events::REQUEST_GOT == event_type1) {
-        request_client* request_client1 = (request_client*) data;
-        cache.lock_write();
-        cache_entry *cache_entry1;
-
-        auto iter = cache.find(request_client1->get_url());
-        if (cache.end() == iter) {
-            request_client1->log("There is no appropriate data in cache");
-            cache_entry1 = new cache_entry();
-            cache_entry1->add_observer(this);
-            cache.insert(request_client1->get_url(), cache_entry1);
-
-        } else {
-            request_client1->log("There is appropriate data in cache");
-            cache_entry1 = iter.operator*().second;
-        }
-
-        request_client1 -> set_buffer(cache_entry1);
-        cache_entry1 -> add_reader(request_client1->get_socket_fd(), request_client1);
-
-        cache.unlock();
-    }
 }
 
 proxy_server::~proxy_server() {

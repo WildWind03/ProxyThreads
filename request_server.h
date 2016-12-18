@@ -37,7 +37,7 @@ public:
 
         if (-1 == connect_result) {
             log("Can not connect");
-            observer1 -> update(events::CONNECTION_WITH_SERVER_FAILED, (void*) get_socket_fd());
+            observer1 -> update(events::SEND_TO_SERVER_ERROR, (void*) get_socket_fd());
             return;
         }
 
@@ -48,7 +48,7 @@ public:
 
                 if (-1 == count_of_send_data) {
                     log ("Error while sending data to server");
-                    observer1 -> update(events::CONNECTION_WITH_SERVER_FAILED, (void*) get_socket_fd());
+                    observer1 -> update(events::SEND_TO_SERVER_ERROR, (void*) get_socket_fd());
                     return;
                 }
 
@@ -60,12 +60,13 @@ public:
                 }
 
             } else {
-                int result = cache_entry1->write(get_socket_fd());
+                int result = cache_entry1 -> write(get_socket_fd());
 
                 if (-1 == result) {
                     observer1 -> update(events::SEND_FROM_SERVER_ERROR, (void*) get_socket_fd());
-                    return;
                 }
+
+                return;
             }
         }
 

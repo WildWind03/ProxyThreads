@@ -26,10 +26,13 @@ public:
         pthread_rwlock_unlock(&rwlock);
     }
 
-    void erase(K key) {
+    V erase(K key) {
         pthread_rwlock_wrlock(&rwlock);
+        V value = find(key).operator*().second;
         map.erase(key);
         pthread_rwlock_unlock(&rwlock);
+
+        return value;
     }
 
     typename std::map<K, V>::const_iterator find(K key) {
