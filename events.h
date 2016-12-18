@@ -11,6 +11,7 @@ public:
     static const int REQUEST_GOT = 2;
     static const int CONNECTION_WITH_SERVER_FAILED = 3;
     static const int NEW_DATA = 4;
+    static const int CAN_WRITE = 5;
     events() = delete;
 };
 #endif //PROXYTHREADS_EVENTS_H

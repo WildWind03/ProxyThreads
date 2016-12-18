@@ -16,6 +16,10 @@ public:
     concurrent_hash_map() {
     }
 
+    size_t size() {
+        return map.size();
+    }
+
     void insert(K key, V value) {
         pthread_rwlock_wrlock(&rwlock);
         map.insert(std::pair<K,V>(key, value));
