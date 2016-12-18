@@ -65,7 +65,7 @@ void proxy_server::start() {
             std::cout << "New CLient" << std::endl;
             request_client *request_client1 = new request_client(new_fd, sockaddr_in1);
             request_client1->set_observer(this);
-            requests.insert(new_fd, request_client1);
+            //requests.insert(new_fd, request_client1);
             request_client1->start();
         } catch (const exception_can_not_create_request & can_not_create_request) {
             std::cout << can_not_create_request.get_text() << std::endl;
@@ -83,34 +83,26 @@ void proxy_server::update(int event_type1, void *data) {
     switch(event_type1) {
         case events::REQUEST_GOT:
             request_client* request_client1 = (request_client*) data;
-            cache.lock_write();
-            cache_entry *cache_entry1;
+            cache_entry *cache_entry1 = cache.get(request_client1 -> get_url());
 
-            auto iter = cache.find(request_client1->get_url());
-            if (cache.end() == iter) {
+            if (nullptr == cache_entry1) {
                 request_client1->log("There is no appropriate data in cache");
                 cache_entry1 = new cache_entry(request_client1->get_url());
                 cache_entry1->add_observer(this);
                 cache.insert(request_client1->get_url(), cache_entry1);
-
             } else {
                 request_client1->log("There is appropriate data in cache");
-                cache_entry1 = iter.operator*().second;
             }
 
             request_client1 -> set_buffer(cache_entry1);
             cache_entry1 -> add_reader();
 
-            cache.unlock();
-
             break;
-        case events::DELETE_REQUEST:
-            requests.erase((int) data);
-            break;
+        //case events::DELETE_REQUEST:
+        //    requests.erase((int) data);
+        //    break;
         case events::DELETE_ENTRY_FROM_CACHE:
             cache.erase((char*) data);
-            break;
-        case events::SEND_TO_BROWSER_ERROR:
             break;
         default:
             break;

@@ -12,6 +12,18 @@ class concurrent_hash_map {
     std::map<K,V> map;
     pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
+    typename std::map<K,V>::const_iterator begin() const {
+        return map.begin();
+    }
+
+    typename std::map<K,V>::const_iterator end() const {
+        return map.end();
+    }
+
+    typename std::map<K, V>::const_iterator find(K key) {
+        return map.find(key);
+    }
+
 public:
     concurrent_hash_map() {
     }
@@ -35,11 +47,25 @@ public:
         return value;
     }
 
-    typename std::map<K, V>::const_iterator find(K key) {
-        return map.find(key);
+    V get(K key) {
+        pthread_rwlock_rdlock(&rwlock);
+
+        V value;
+
+        auto iter = map.find(key);
+
+        if (iter == map.end()) {
+            value = nullptr;
+        } else {
+            value = iter.second;
+        }
+
+        pthread_rwlock_unlock(&rwlock);
+
+        return value;
     }
 
-    void lock_read() {
+    /*void lock_read() {
         pthread_rwlock_rdlock(&rwlock);
     }
 
@@ -49,16 +75,7 @@ public:
 
     void lock_write() {
         pthread_rwlock_wrlock(&rwlock);
-    }
-
-
-    typename std::map<K,V>::const_iterator begin() const {
-        return map.begin();
-    }
-
-    typename std::map<K,V>::const_iterator end() const {
-        return map.end();
-    }
+    }*/
 
     virtual ~concurrent_hash_map() {
         pthread_rwlock_destroy(&rwlock);
