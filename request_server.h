@@ -20,7 +20,6 @@ class request_server : public request_base, public observer {
     observer *observer1;
     bool is_write = true;
     size_t pos_in_sending_data = 0;
-    size_t pos_in_cache = 0;
 
 public:
     request_server(int socket_fd, addrinfo *addrinfo1, std::string request, cache_entry *cache_entry1, std::string url) : request_base(socket_fd) {
@@ -61,9 +60,12 @@ public:
                 }
 
             } else {
-                char* pos = cache_entry1->get_char_to_write(pos_in_cache);
-                ssize_t count_of_received_bytes = recv(get_socket_fd(), pos,
-                                                       cached_data1 -> get_max_data_can_be_written(), 0);
+                int result = cache_entry1->write(get_socket_fd());
+
+                if (-1 == result) {
+                    observer1 -> update(events::SEND_FROM_SERVER_ERROR, (void*) get_socket_fd());
+                    return;
+                }
             }
         }
 

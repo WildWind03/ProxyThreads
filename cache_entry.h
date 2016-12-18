@@ -12,6 +12,7 @@
 #include "atomic_counter.h"
 
 class cache_entry {
+    std::string url;
     char* data;
     size_t current_length = 0;
     pthread_mutex_t mutex;
@@ -22,33 +23,45 @@ class cache_entry {
 
     concurrent_hash_map<int, observer*> readers;
 
+    observer *observer1;
+
     bool is_finished = false;
 
     const size_t MAX_DATA_SIZE = 5 * 1024 * 1024;
 
 public:
-    cache_entry() {
+    cache_entry(std::string url) {
         data = new char[MAX_DATA_SIZE];
         mutex = PTHREAD_MUTEX_INITIALIZER;
         cond_reader = PTHREAD_COND_INITIALIZER;
         cond_writer = PTHREAD_COND_INITIALIZER;
+        this -> url = url;
     }
 
     int read(int socket_fd, char* src) {
         size_t pos = 0;
         int result;
 
-        while(true) {
-            pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(&mutex);
 
-            if (pos == current_length) {
+        while(true) {
+
+            if (pos == current_length && is_finished) {
+                result = 0;
+                break;
+            }
+
+            if (pos == MAX_DATA_SIZE && !is_finished) {
                 atomic_counter1.increment();
 
                 readers.lock_read();
 
                 if (atomic_counter1.get() == readers.size()) {
+                    observer1 -> update(events::STREAM_ENTRY, (void*) url.c_str()); //todo write update
                     pthread_cond_signal(&cond_writer);
                 }
+
+                readers.unlock();
             }
 
             while (pos == current_length) {
@@ -63,30 +76,29 @@ public:
             }
 
             pos += count_of_sent_chars;
-
-            pthread_mutex_unlock(&mutex);
         }
+
+        pthread_mutex_unlock(&mutex);
+
+        return result;
     }
 
-    int write(int socket_fd, char* dest) {
-        int result;
+    int write(int socket_fd) {
+        int result = -1;
 
         pthread_mutex_lock(&mutex);
 
-        while(true) {
+        while(!is_finished) {
             while (0 == MAX_DATA_SIZE - current_length) {
                 pthread_cond_wait(&cond_writer, &mutex);
-            }
 
-            if (0 == MAX_DATA_SIZE - current_length) {
-                if (atomic_counter1.get() == readers.size()) {
+                if (atomic_counter1.get() >= readers.size()) {
                     atomic_counter1.set_value(0);
                     current_length = 0;
-                    readers.unlock();
                 }
             }
 
-            ssize_t count_of_received_bytes = recv(socket_fd, dest + current_length,
+            ssize_t count_of_received_bytes = recv(socket_fd, data + current_length,
                                                    MAX_DATA_SIZE - current_length, 0);
 
             current_length += count_of_received_bytes;
@@ -99,7 +111,6 @@ public:
             if (0 == count_of_received_bytes) {
                 is_finished = true;
                 result = 0;
-                break;
             }
 
             pthread_cond_broadcast(&cond_reader);
@@ -110,48 +121,12 @@ public:
         return result;
     }
 
-   /* char* get_char_to_read(size_t current_pos) {
-        //pthread_rwlock_rdlock(&rwlock);
-        return data + current_pos;
-    }
-
-    void update_data_was_read(size_t current_pos) {
-        if (current_pos == current_length) {
-
-        }
-
-        if (current_pos == MAX_DATA_SIZE) {
-            atomic_counter1.increment();
-        }
-
-        if (!is_finished && atomic_counter1.get() == readers.size()) {
-            writer->update(events::CAN_WRITE, nullptr);
-        }
-
-        //pthread_rwlock_unlock(&rwlock);
-    }
-
-    void update_data_was_add(size_t count_of_added_bytes) {
-        current_length += count_of_added_bytes;
-        //pthread_rwlock_unlock(&rwlock);
-
-        readers.lock_read();
-
-        for (auto iter : readers) {
-            iter.second->update(events::NEW_DATA, nullptr);
-        }
-
-        readers.unlock();
-    }
-
-    char* get_char_to_write(size_t current_pos) {
-        //pthread_rwlock_wrlock(&rwlock);
-        return data + current_pos;
-    }
-    */
-
     void add_reader(int fd, observer *observer1) {
         readers.insert(fd, observer1);
+    }
+
+    void add_observer(observer *observer2) {
+        this -> observer1 = observer2;
     }
 
     void delete_reader(int fd) {
@@ -159,7 +134,6 @@ public:
     }
 
     virtual ~cache_entry() {
-        //pthread_rwlock_destroy(&rwlock);
         pthread_mutex_destroy(&mutex);
         pthread_cond_destroy(&cond_reader);
         pthread_cond_destroy(&cond_writer);

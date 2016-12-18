@@ -99,6 +99,7 @@ void proxy_server::update(int event_type1, void *data) {
         if (cache.end() == iter) {
             request_client1->log("There is no appropriate data in cache");
             cache_entry1 = new cache_entry();
+            cache_entry1->add_observer(this);
             cache.insert(request_client1->get_url(), cache_entry1);
 
         } else {

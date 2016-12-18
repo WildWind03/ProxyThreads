@@ -12,6 +12,9 @@ public:
     static const int CONNECTION_WITH_SERVER_FAILED = 3;
     static const int NEW_DATA = 4;
     static const int CAN_WRITE = 5;
+    static const int STREAM_ENTRY = 6;
+    static const int SEND_TO_BROWSER_ERROR = 7;
+    static const int SEND_FROM_SERVER_ERROR = 8;
     events() = delete;
 };
 #endif //PROXYTHREADS_EVENTS_H

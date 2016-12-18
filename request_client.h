@@ -92,8 +92,13 @@ public:
                 }
 
             } else {
-                std::cout << "STOP" << std::endl;
-                //событие создать новый серверный поток
+                int result = cache_entry1->read(get_socket_fd(), request);
+
+                if (-1 == result) {
+                    observer1 -> update(events::SEND_TO_BROWSER_ERROR, (void*) get_url().c_str());
+                    return;
+                }
+
                 break;
             }
         }
