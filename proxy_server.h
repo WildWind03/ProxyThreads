@@ -17,7 +17,6 @@ class proxy_server : public observer {
 
     int socket_fd;
     bool is_running = true;
-    //concurrent_hash_map <int, request_base*> requests;
     concurrent_hash_map <std::string, cache_entry*> cache;
 
 public:
