@@ -28,7 +28,14 @@ public:
     }
 
     virtual void start() {
-        int result_of_thread_creating = pthread_create(&thread, NULL, run, this);
+        pthread_attr_t pthread_attr;
+        pthread_attr_init(&pthread_attr);
+        pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED);
+
+        int result_of_thread_creating = pthread_create(&thread, &pthread_attr, run, this);
+
+        pthread_attr_destroy(&pthread_attr);
+
         if (-1 == result_of_thread_creating) {
             throw exception_can_not_create_request("Can not create new thread");
         }
