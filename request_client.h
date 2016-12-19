@@ -90,6 +90,7 @@ public:
             } else {
                 int result = cache_entry1->read_to_browser(get_socket_fd(), request);
 
+                log("The response was sent to browser. Return code is " + std::to_string(result));
                 if (cache_entry::DELETE_CACHE_ENTRY == result) {
                     delete cache_entry1;
                 } else {
@@ -106,6 +107,10 @@ public:
 
     const char* get_request() {
         return request;
+    }
+
+    std::string get_host() {
+        return host;
     }
 
     std::string get_url() {

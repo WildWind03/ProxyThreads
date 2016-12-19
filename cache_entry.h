@@ -31,6 +31,7 @@ class cache_entry {
 
 public:
 
+    const static int SUCCESS = 0;
     const static int COMMON_ERROR = -1;
     const static int DELETE_CACHE_ENTRY = -2;
 
@@ -43,23 +44,28 @@ public:
     }
 
     int read_to_browser(int socket_fd, char *src) {
-        size_t pos = 0;
-        int result;
+        ssize_t pos = 0;
 
         pthread_mutex_lock(&mutex);
 
         while(true) {
-            while (pos >= current_length && !is_invalid && !(is_finished && current_length == pos)) {
+            while ((pos >= current_length && !is_finished && !is_invalid) || -1 == pos) {
                 pthread_cond_wait(&cond_reader, &mutex);
+
+                if (-1 == pos && count_of_readers_which_have_read_all_buffer != count_of_readers) {
+                    pos = 0;
+                }
             }
 
             if (is_finished && current_length == pos) {
                 count_of_readers--;
 
-                result = 0;
+                int result = SUCCESS;
+
                 if (is_streaming && 0 == count_of_readers) {
                     result = DELETE_CACHE_ENTRY;
                 }
+
                 pthread_mutex_unlock(&mutex);
 
                 return result;
@@ -67,7 +73,7 @@ public:
             }
 
             if (is_invalid) {
-                result = COMMON_ERROR;
+                int result = COMMON_ERROR;
                 count_of_readers--;
 
                 if (0 == count_of_readers) {
@@ -82,14 +88,26 @@ public:
             ssize_t count_of_sent_chars = send(socket_fd, data + pos, current_length - pos, MSG_NOSIGNAL);
 
             if (-1 == count_of_sent_chars) {
-                result = COMMON_ERROR;
                 count_of_readers--;
 
-                if (is_streaming && 0 == count_of_readers) {
-                    result = DELETE_CACHE_ENTRY;
+                if (is_finished) {
+                    if (is_streaming) {
+                        if (0 == count_of_readers) {
+                            pthread_mutex_unlock(&mutex);
+                            return DELETE_CACHE_ENTRY;
+                        } else {
+                            pthread_mutex_unlock(&mutex);
+                            return COMMON_ERROR;
+                        }
+                    } else {
+                        pthread_mutex_unlock(&mutex);
+                        return COMMON_ERROR;
+                    }
+                } else {
+                    pthread_cond_signal(&cond_writer);
+                    pthread_mutex_unlock(&mutex);
+                    return COMMON_ERROR;
                 }
-
-                break;
             }
 
             pos += count_of_sent_chars;
@@ -99,37 +117,33 @@ public:
 
                 if (count_of_readers_which_have_read_all_buffer == count_of_readers) {
                     pthread_cond_signal(&cond_writer);
+                    pos = -1;
                 }
             }
         }
-
-        pthread_mutex_unlock(&mutex);
-
-        return result;
     }
 
     int read_from_server(int socket_fd) {
-        int result = COMMON_ERROR;
-
         pthread_mutex_lock(&mutex);
 
-        while(!is_finished) {
+        while(true) {
             while (0 == MAX_DATA_SIZE - current_length &&
                    count_of_readers_which_have_read_all_buffer < count_of_readers) {
                 pthread_cond_wait(&cond_writer, &mutex);
             }
 
             if (0 == MAX_DATA_SIZE - current_length && count_of_readers_which_have_read_all_buffer >= count_of_readers) {
-                is_streaming = true;
-                observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+                if (!is_streaming) {
+                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+                    is_streaming = true;
+                }
+                if (0 == count_of_readers) {
+                    pthread_mutex_unlock(&mutex);
+                    return DELETE_CACHE_ENTRY;
+                }
+
                 count_of_readers_which_have_read_all_buffer = 0;
                 current_length = 0;
-            }
-
-            if (0 == count_of_readers && is_streaming) {
-                result = DELETE_CACHE_ENTRY;
-                pthread_mutex_unlock(&mutex);
-                return result;
             }
 
             ssize_t count_of_received_bytes = recv(socket_fd, data + current_length,
@@ -138,21 +152,27 @@ public:
             current_length += count_of_received_bytes;
 
             if (-1 == count_of_received_bytes) {
-                result = COMMON_ERROR;
-                is_invalid = true;
+                if (0 == count_of_readers) {
+                    observer1->update(events::DELETE_ENTRY_FROM_CACHE, nullptr);
+                    pthread_mutex_unlock(&mutex);
+                    return DELETE_CACHE_ENTRY;
+                } else {
+                    is_invalid = true;
+                    pthread_cond_broadcast(&cond_reader);
+                    pthread_mutex_unlock(&mutex);
+                    return COMMON_ERROR;
+                }
             }
 
             if (0 == count_of_received_bytes) {
                 is_finished = true;
-                result = 0;
+                pthread_cond_broadcast(&cond_reader);
+                pthread_mutex_unlock(&mutex);
+                return SUCCESS;
             }
 
             pthread_cond_broadcast(&cond_reader);
         }
-
-        pthread_mutex_unlock(&mutex);
-
-        return result;
     }
 
     void add_reader() {
@@ -171,6 +191,10 @@ public:
         pthread_mutex_lock(&mutex);
         count_of_readers--;
         pthread_mutex_unlock(&mutex);
+    }
+
+    int get_count_of_readers() {
+        return count_of_readers;
     }
 
     void mark_invalid() {

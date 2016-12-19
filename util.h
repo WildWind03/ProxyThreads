@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 #include <string>
 #include <algorithm>
+#include <netdb.h>
+#include "exception_invalid_http_data.h"
 
 class sockets_util {
     sockets_util() = delete;
@@ -67,6 +69,26 @@ public:
         std::replace(new_logger_name.begin(), new_logger_name.end(), ':', '_');
 
         return new_logger_name;
+    }
+
+    static addrinfo* hostname_to_addrinfo(std::string host) {
+        addrinfo hints;
+        memset (&hints, 0, sizeof(hints));
+
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+
+        addrinfo *res;
+
+        int status;
+
+        if ((status = getaddrinfo(host.c_str(), "http", &hints, &res)) == -1) {
+            std::cout << "Can not resolve hostname" << std::endl;
+            freeaddrinfo(res);
+            throw exception_invalid_http_data("Can not resolve hostname");
+        }
+
+        return res;
     }
 };
 #endif //PROXYTHREADS_SOCKETS_UTIL_H

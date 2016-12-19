@@ -85,18 +85,33 @@ void proxy_server::update(int event_type1, void *data) {
             request_client* request_client1 = (request_client*) data;
             cache_entry *cache_entry1 = cache.get(request_client1 -> get_url());
 
-            if (nullptr == cache_entry1) {
+            if (NULL == cache_entry1) {
                 request_client1->log("There is no appropriate data in cache");
+
+                addrinfo *addrinfo1 = sockets_util::hostname_to_addrinfo(request_client1->get_host());
+
+                int server_socket_fd = socket(addrinfo1 -> ai_family, addrinfo1 -> ai_socktype, addrinfo1 -> ai_protocol);
+                if (-1 == server_socket_fd) {
+                    request_client1 -> log("Can not create socket to server");
+                    throw exception_invalid_http_data("Can not create socket");
+                }
+
                 cache_entry1 = new cache_entry(request_client1->get_url());
                 cache_entry1->add_observer(this);
                 cache.insert(request_client1->get_url(), cache_entry1);
-                //todo create server request
+                request_server *request_server1 = new request_server(server_socket_fd,
+                                                                     addrinfo1,
+                                                                     request_client1->get_request(), cache_entry1, request_client1->get_url());
+                request_server1->set_observer(this);
+                request_client1 -> set_buffer(cache_entry1);
+                cache_entry1 -> add_reader();
+                request_server1->start();
             } else {
                 request_client1->log("There is appropriate data in cache");
+                request_client1 -> set_buffer(cache_entry1);
+                cache_entry1 -> add_reader();
             }
 
-            request_client1 -> set_buffer(cache_entry1);
-            cache_entry1 -> add_reader();
             break;
         case events::DELETE_ENTRY_FROM_CACHE:
             cache.erase((char*) data);
