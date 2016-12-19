@@ -29,7 +29,7 @@ class cache_entry {
     bool is_streaming = false;
     bool is_checked_response = false;
 
-    const size_t MAX_DATA_SIZE = 110 * 1024 * 1024;
+    const size_t MAX_DATA_SIZE = 5 * 1024 * 1024;
     const int OK_RESPONSE = 200;
 
 public:
