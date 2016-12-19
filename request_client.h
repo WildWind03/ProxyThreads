@@ -72,7 +72,7 @@ public:
                         switch (request_type) {
                             case http_request_parser::GET_REQUEST : {
                                 is_read = false;
-                                logger1 = new logger("client", "/home/alexander/ClionProjects/Proxy/log/" + sockets_util::get_logger_filename_by_url(url));
+                                logger1 = new logger("client", "/home/alexander/ClionProjects/ProxyThreads/log/" + sockets_util::get_logger_filename_by_url(url));
                                 observer1->update(events::REQUEST_GOT, this);
                                 break;
                             }
