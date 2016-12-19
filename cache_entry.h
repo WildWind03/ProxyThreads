@@ -6,6 +6,7 @@
 #define PROXYTHREADS_CACHE_ENTRY_H
 
 #include <cstring>
+#include <sstream>
 #include "my_observer.h"
 #include "concurrent_hash_map.h"
 #include "events.h"
@@ -26,8 +27,10 @@ class cache_entry {
     bool is_finished = false;
     bool is_invalid = false;
     bool is_streaming = false;
+    bool is_checked_response = false;
 
     const size_t MAX_DATA_SIZE = 110 * 1024 * 1024;
+    const int OK_RESPONSE = 200;
 
 public:
 
@@ -158,6 +161,7 @@ public:
 
             pthread_mutex_lock(&mutex);
 
+
             current_length += count_of_received_bytes;
 
             if (-1 == count_of_received_bytes) {
@@ -178,6 +182,28 @@ public:
                 pthread_cond_broadcast(&cond_reader);
                 pthread_mutex_unlock(&mutex);
                 return SUCCESS;
+            }
+
+            if (!is_checked_response) {
+                for (size_t k = 0; k < count_of_received_bytes; ++k) {
+                    if (data[current_length - count_of_received_bytes + k] == '\n') {
+                        std::stringstream stringstream1(data);
+
+                        std::string buffer;
+
+                        stringstream1 >> buffer;
+                        stringstream1 >> buffer;
+
+                        int response_code = std::stoi(buffer);
+
+                        if (OK_RESPONSE != response_code) {
+                            observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, &url);
+                        }
+
+                        is_checked_response = true;
+                        break;
+                    }
+                }
             }
 
             pthread_cond_broadcast(&cond_reader);
