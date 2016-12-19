@@ -80,9 +80,7 @@ public:
 
         addrinfo *res;
 
-        int status;
-
-        if ((status = getaddrinfo(host.c_str(), "http", &hints, &res)) == -1) {
+        if (getaddrinfo(host.c_str(), "http", &hints, &res) == -1) {
             std::cout << "Can not resolve hostname" << std::endl;
             freeaddrinfo(res);
             throw exception_invalid_http_data("Can not resolve hostname");
