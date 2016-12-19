@@ -76,9 +76,8 @@ public:
                 }
             } else {
                 int result = cache_entry1->read_from_server(get_socket_fd());
-                //
 
-                log("The response was received from the server! Result code is " + std::to_string(result));
+                log("The response was received from the server!");
 
                 if (cache_entry::DELETE_CACHE_ENTRY == result) {
                     delete cache_entry1;

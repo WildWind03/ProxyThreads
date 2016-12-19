@@ -63,7 +63,6 @@ void proxy_server::start() {
         }
 
         try {
-            std::cout << "New Client" << std::endl;
             request_client *request_client1 = new request_client(new_fd, sockaddr_in1);
             request_client1->set_observer(this);
             request_client1->start();

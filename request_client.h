@@ -65,7 +65,7 @@ public:
                         host = http_parser1.get_host();
 
                         if (major_v != 1 || minor_v != 0) {
-                            std::cout << "[POSSIBLE INCORRECT BEHAVIOR] The version of http protocol is not supported" + std::to_string(major_v) + "." + std::to_string(minor_v) << std::endl;
+                            std::cout << "[POSSIBLE INCORRECT BEHAVIOR] The version of http protocol is not supported: " + std::to_string(major_v) + "." + std::to_string(minor_v) << std::endl;
                         }
 
                         int request_type = http_parser1.get_request_type();
@@ -90,7 +90,19 @@ public:
             } else {
                 int result = cache_entry1->read_to_browser(get_socket_fd(), request);
 
-                log("The response was sent to browser. Return code is " + std::to_string(result));
+                switch(result) {
+                    case cache_entry::COMMON_ERROR:
+                    case cache_entry::DELETE_CACHE_ENTRY:
+                        log("Error happened while transferring data from server to client");
+                        break;
+                    case cache_entry::SUCCESS:
+                        log("The response was successfully sent to browser");
+                        break;
+                    default:
+                        log("Impossible event happened!!!");
+                        break;
+                }
+
                 if (cache_entry::DELETE_CACHE_ENTRY == result) {
                     delete cache_entry1;
                 }
