@@ -76,6 +76,7 @@ public:
                 }
             } else {
                 int result = cache_entry1->read_from_server(get_socket_fd());
+                //
 
                 log("The response was received from the server! Result code is " + std::to_string(result));
 
@@ -85,7 +86,6 @@ public:
 
                 if (cache_entry::COMMON_ERROR == result) {
                     observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, &url);
-                    cache_entry1 -> mark_invalid();
                 }
 
                 return;

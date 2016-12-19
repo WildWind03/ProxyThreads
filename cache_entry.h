@@ -46,9 +46,9 @@ public:
     int read_to_browser(int socket_fd, char *src) {
         ssize_t pos = 0;
 
-        pthread_mutex_lock(&mutex);
-
         while(true) {
+            pthread_mutex_lock(&mutex);
+
             while ((pos >= current_length && !is_finished && !is_invalid) || -1 == pos) {
                 pthread_cond_wait(&cond_reader, &mutex);
 
@@ -56,7 +56,6 @@ public:
                     pos = 0;
                 }
             }
-
             if (is_finished && current_length == pos) {
                 count_of_readers--;
 
@@ -67,7 +66,6 @@ public:
                 }
 
                 pthread_mutex_unlock(&mutex);
-
                 return result;
 
             }
@@ -81,12 +79,15 @@ public:
                 }
 
                 pthread_mutex_unlock(&mutex);
-
                 return result;
             }
 
+
+            pthread_mutex_unlock(&mutex);
+
             ssize_t count_of_sent_chars = send(socket_fd, data + pos, current_length - pos, MSG_NOSIGNAL);
 
+            pthread_mutex_lock(&mutex);
             if (-1 == count_of_sent_chars) {
                 count_of_readers--;
 
@@ -120,13 +121,15 @@ public:
                     pos = -1;
                 }
             }
+
+            pthread_mutex_unlock(&mutex);
         }
     }
 
     int read_from_server(int socket_fd) {
-        pthread_mutex_lock(&mutex);
-
         while(true) {
+            pthread_mutex_lock(&mutex);
+
             while (0 == MAX_DATA_SIZE - current_length &&
                    count_of_readers_which_have_read_all_buffer < count_of_readers) {
                 pthread_cond_wait(&cond_writer, &mutex);
@@ -146,8 +149,12 @@ public:
                 current_length = 0;
             }
 
+            pthread_mutex_unlock(&mutex);
+
             ssize_t count_of_received_bytes = recv(socket_fd, data + current_length,
                                                    MAX_DATA_SIZE - current_length, 0);
+
+            pthread_mutex_lock(&mutex);
 
             current_length += count_of_received_bytes;
 
@@ -172,6 +179,7 @@ public:
             }
 
             pthread_cond_broadcast(&cond_reader);
+            pthread_mutex_unlock(&mutex);
         }
     }
 
