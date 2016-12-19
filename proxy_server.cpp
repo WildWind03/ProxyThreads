@@ -116,7 +116,6 @@ void proxy_server::update(int event_type1, void *data) {
             break;
         }
         case events::DELETE_ENTRY_FROM_CACHE: {
-            //cache.erase((char*) data);
             cache.erase(*((std::string *) data));
             std::string string((char *) data);
             std::cout << "A" << string << "A" << std::endl;

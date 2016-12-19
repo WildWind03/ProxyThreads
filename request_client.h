@@ -93,8 +93,6 @@ public:
                 log("The response was sent to browser. Return code is " + std::to_string(result));
                 if (cache_entry::DELETE_CACHE_ENTRY == result) {
                     delete cache_entry1;
-                } else {
-                    cache_entry1 -> delete_reader();
                 }
 
                 break;

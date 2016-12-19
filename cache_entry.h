@@ -56,6 +56,7 @@ public:
                     pos = 0;
                 }
             }
+
             if (is_finished && current_length == pos) {
                 count_of_readers--;
 
@@ -116,10 +117,11 @@ public:
             if (pos == MAX_DATA_SIZE && !is_finished) {
                 count_of_readers_which_have_read_all_buffer++;
 
-                if (count_of_readers_which_have_read_all_buffer == count_of_readers) {
+                if (count_of_readers_which_have_read_all_buffer >= count_of_readers) {
                     pthread_cond_signal(&cond_writer);
-                    pos = -1;
                 }
+
+                pos = -1;
             }
 
             pthread_mutex_unlock(&mutex);
@@ -192,12 +194,6 @@ public:
     void add_observer(observer *observer2) {
         pthread_mutex_lock(&mutex);
         this -> observer1 = observer2;
-        pthread_mutex_unlock(&mutex);
-    }
-
-    void delete_reader() {
-        pthread_mutex_lock(&mutex);
-        count_of_readers--;
         pthread_mutex_unlock(&mutex);
     }
 
