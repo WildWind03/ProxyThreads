@@ -42,7 +42,7 @@ public:
 
         if (-1 == connect_result) {
             log("Can not connect");
-            observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+            observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, &url);
             cache_entry1 -> mark_invalid();
             return;
         }
@@ -54,7 +54,7 @@ public:
 
                 if (-1 == count_of_send_data) {
                     log ("Error while sending data to server");
-                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, &url);
 
                     if (0 == cache_entry1 -> get_count_of_readers()) {
                         delete cache_entry1;
@@ -84,7 +84,7 @@ public:
                 }
 
                 if (cache_entry::COMMON_ERROR == result) {
-                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, &url);
                     cache_entry1 -> mark_invalid();
                 }
 

@@ -134,7 +134,7 @@ public:
 
             if (0 == MAX_DATA_SIZE - current_length && count_of_readers_which_have_read_all_buffer >= count_of_readers) {
                 if (!is_streaming) {
-                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+                    observer1 -> update(events::DELETE_ENTRY_FROM_CACHE, &url);
                     is_streaming = true;
                 }
                 if (0 == count_of_readers) {
@@ -153,7 +153,7 @@ public:
 
             if (-1 == count_of_received_bytes) {
                 if (0 == count_of_readers) {
-                    observer1->update(events::DELETE_ENTRY_FROM_CACHE, (void*) url.c_str());
+                    observer1->update(events::DELETE_ENTRY_FROM_CACHE, &url);
                     pthread_mutex_unlock(&mutex);
                     return DELETE_CACHE_ENTRY;
                 } else {
