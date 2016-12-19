@@ -27,7 +27,7 @@ class cache_entry {
     bool is_invalid = false;
     bool is_streaming = false;
 
-    const size_t MAX_DATA_SIZE = 5 * 1024 * 1024;
+    const size_t MAX_DATA_SIZE = 110 * 1024 * 1024;
 
 public:
 
